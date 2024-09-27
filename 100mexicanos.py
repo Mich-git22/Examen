@@ -14,9 +14,6 @@ class JuegoMexicanosDijeron:
         self.puntaje = 0
         self.respuestas_seleccionadas = []  # Para almacenar las respuestas seleccionadas
         self.preguntas = self.cargar_preguntas()
-        self.nivel = 0  # Inicializar nivel
-        self.timer_label = None  # Label del temporizador
-        self.timer = None  # Temporizador
 
         # Interfaz de usuario
         self.lbl_instrucciones = tk.Label(root, text="¡Bienvenido al juego de 100 Mexicanos Dijeron!", bg="#4A90E2",
@@ -60,7 +57,7 @@ class JuegoMexicanosDijeron:
     def ingresar_nombre(self):
         self.usuario = simpledialog.askstring("Nombre del Jugador", "Por favor, ingresa tu nombre:")
         if self.usuario:
-            self.lbl_instrucciones.config(text=f"¡Bienvenido, {self.usuario}! ¿Listo para jugar?")
+            self.lbl_instrucciones.config(text=f"¡Bienvenido, {self.usuario}!")
             self.mostrar_instrucciones()  # Mostrar instrucciones después de ingresar el nombre
 
     def mostrar_instrucciones(self):
@@ -70,7 +67,7 @@ class JuegoMexicanosDijeron:
             "2. Se te hará una pregunta y deberás ingresar una respuesta.\n"
             "3. Cada respuesta correcta suma puntos según la popularidad de la respuesta.\n"
             "4. Se presentarán varias preguntas y al final se mostrará tu puntaje total.\n"
-            "5. Puedes pedir pistas y también hay un límite de tiempo por pregunta."
+            "5. Puedes elegir comenzar un nuevo juego cuando quieras."
         )
         messagebox.showinfo("Instrucciones", instrucciones)
         self.jugar()  # Comenzar el juego después de mostrar instrucciones
@@ -90,78 +87,23 @@ class JuegoMexicanosDijeron:
     def mostrar_pregunta(self):
         if self.nivel < len(self.lista_preguntas):
             pregunta_actual = self.lista_preguntas[self.nivel]
-            self.respuestas = self.preguntas[pregunta_actual]
+            respuesta_usuario = simpledialog.askstring("Pregunta", pregunta_actual)
+            respuesta_encontrada = False
 
-            # Crear ventana para la pregunta
-            self.ventana_pregunta = tk.Toplevel(self.root)
-            self.ventana_pregunta.title("Pregunta")
-            self.ventana_pregunta.configure(bg="#4A90E2")
+            for respuesta in self.preguntas[pregunta_actual]:
+                if respuesta_usuario and respuesta_usuario.lower() == respuesta['respuesta'].lower():
+                    self.puntaje += respuesta['puntos']
+                    self.respuestas_seleccionadas.append(
+                        (respuesta['respuesta'], respuesta['puntos']))  # Guardar respuesta y puntaje
+                    respuesta_encontrada = True
 
-            # Mostrar pregunta
-            lbl_pregunta = tk.Label(self.ventana_pregunta, text=pregunta_actual, bg="#4A90E2", fg="#FFFFFF",
-                                    font=("Helvetica", 16))
-            lbl_pregunta.pack(pady=20)
+            if not respuesta_encontrada:
+                messagebox.showinfo("Respuesta Incorrecta", "Respuesta no válida.")
 
-            # Botón para pedir pista
-            btn_pista = tk.Button(self.ventana_pregunta, text="Pedir Pista", command=self.dar_pista, bg="#50E3C2",
-                                  fg="white", font=("Helvetica", 12))
-            btn_pista.pack(pady=10)
-
-            # Pedir respuesta al usuario
-            self.respuesta_usuario = tk.StringVar()
-            entry_respuesta = tk.Entry(self.ventana_pregunta, textvariable=self.respuesta_usuario, bg="#FFFFFF",
-                                       font=("Helvetica", 12))
-            entry_respuesta.pack(pady=10)
-
-            # Botón para enviar respuesta
-            btn_enviar = tk.Button(self.ventana_pregunta, text="Enviar Respuesta", command=self.verificar_respuesta,
-                                   bg="#50E3C2", fg="white", font=("Helvetica", 12))
-            btn_enviar.pack(pady=10)
-
-            # Temporizador
-            self.timer_label = tk.Label(self.ventana_pregunta, text="Tiempo: 10", bg="#4A90E2", fg="#FFFFFF",
-                                        font=("Helvetica", 14))
-            self.timer_label.pack(pady=10)
-
-            self.start_timer(10)  # Iniciar temporizador de 10 segundos
-
-        else:
-            self.mostrar_resultados()  # Mostrar resultados al finalizar
-
-    def start_timer(self, tiempo):
-        if tiempo > 0:
-            self.timer_label.config(text=f"Tiempo: {tiempo}")
-            self.timer = self.root.after(1000, self.start_timer, tiempo - 1)
-        else:
-            messagebox.showinfo("Tiempo Excedido", "Se acabó el tiempo para esta pregunta.")
-            self.ventana_pregunta.destroy()  # Cerrar ventana de pregunta
             self.nivel += 1  # Aumentar nivel
             self.mostrar_pregunta()  # Mostrar la siguiente pregunta
-
-    def dar_pista(self):
-        # Proporcionar una pista aleatoria sobre la respuesta
-        respuesta_correcta = random.choice(self.respuestas)
-        pista = f"La respuesta comienza con la letra: {respuesta_correcta['respuesta'][0]}"
-        messagebox.showinfo("Pista", pista)
-
-    def verificar_respuesta(self):
-        respuesta_usuario = self.respuesta_usuario.get()
-        respuesta_encontrada = False
-
-        for respuesta in self.respuestas:
-            if respuesta_usuario and respuesta_usuario.lower() == respuesta['respuesta'].lower():
-                self.puntaje += respuesta['puntos']
-                self.respuestas_seleccionadas.append(
-                    (respuesta['respuesta'], respuesta['puntos']))  # Guardar respuesta y puntaje
-                respuesta_encontrada = True
-
-        if not respuesta_encontrada:
-            messagebox.showinfo("Respuesta Incorrecta", "Respuesta no válida.")
-
-        self.ventana_pregunta.destroy()  # Cerrar ventana de pregunta
-        self.nivel += 1  # Aumentar nivel
-        self.start_timer(0)  # Detener temporizador
-        self.mostrar_pregunta()  # Mostrar la siguiente pregunta
+        else:
+            self.mostrar_resultados()  # Mostrar resultados al finalizar
 
     def mostrar_resultados(self):
         resultado = f"¡Juego terminado, {self.usuario}! Tu puntaje total es: {self.puntaje} puntos.\n\n"
